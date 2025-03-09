@@ -29,14 +29,34 @@ export const convertFilter = (filter) => {
           },
         };
       }
+
+      let operatorExpression;
+      if (typeof value === 'object') {
+        if (value.startsWith) {
+          operatorExpression = {
+            [(Op.like as unknown) as string]: `${escape(value.startsWith)}%`,
+          };
+        } else if (value.endsWith) {
+          operatorExpression = {
+            [(Op.like as unknown) as string]: `%${escape(value.endsWith)}`,
+          };
+        } else if (value.equals) {
+          operatorExpression = {
+            [Op.eq]: `${escape(value.equals)}`,
+          };
+        }
+      } else {
+        operatorExpression = {
+          [(Op.like as unknown) as string]: `%${escape(value)}%`,
+        };
+      }
+
       return {
         ...memo,
         [Op.and]: [
           ...(memo[Op.and] || []),
           {
-            [property.name()]: {
-              [(Op.like as unknown) as string]: `%${escape(value)}%`,
-            },
+            [property.name()]: operatorExpression,
           },
         ],
       };
