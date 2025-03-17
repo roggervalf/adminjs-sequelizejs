@@ -3,6 +3,21 @@ import { Op } from 'sequelize';
 
 export const uuidRegex = /^[0-9A-F]{8}-[0-9A-F]{4}-[5|4|3|2|1][0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i;
 
+const OPERATOR_SEPARATOR = '~'
+
+const MATCHING_PATTERNS = {
+  EQ: 'equals',
+  NE: 'notEquals',
+  CO: 'contains',
+  EW: 'endsWith',
+  SW: 'startsWith',
+}
+
+const OPERATORS = {
+  AND: 'and',
+  OR: 'or'
+}
+
 export const convertFilter = (filter) => {
   if (!filter) {
     return {};
@@ -32,17 +47,54 @@ export const convertFilter = (filter) => {
 
       let operatorExpression;
       if (typeof value === 'object') {
-        if (value.startsWith) {
+        if (value[MATCHING_PATTERNS.SW]) {
           operatorExpression = {
-            [(Op.like as unknown) as string]: `${escape(value.startsWith)}%`,
+            [(Op.like as unknown) as string]: `${escape(value[MATCHING_PATTERNS.SW])}%`,
           };
-        } else if (value.endsWith) {
+        } else if (value[MATCHING_PATTERNS.EW]) {
           operatorExpression = {
-            [(Op.like as unknown) as string]: `%${escape(value.endsWith)}`,
+            [(Op.like as unknown) as string]: `%${escape(value[MATCHING_PATTERNS.EW])}`,
           };
-        } else if (value.equals) {
+        } else if (value[MATCHING_PATTERNS.EQ]) {
           operatorExpression = {
-            [Op.eq]: `${escape(value.equals)}`,
+            [Op.eq]: `${escape(value[MATCHING_PATTERNS.EQ])}`,
+          };
+        } else if (value[MATCHING_PATTERNS.NE]) {
+          operatorExpression = {
+            [Op.ne]: `${escape(value[MATCHING_PATTERNS.NE])}`,
+          };
+        } else {
+          const orPrefix = `${OPERATORS.OR}${OPERATOR_SEPARATOR}`;
+          if (value[`${orPrefix}${MATCHING_PATTERNS.SW}`]) {
+            operatorExpression = {
+              [(Op.like as unknown) as string]: `${escape(value[`${orPrefix}${MATCHING_PATTERNS.SW}`])}%`,
+            };
+          } else if (value[`${orPrefix}${MATCHING_PATTERNS.EW}`]) {
+            operatorExpression = {
+              [(Op.like as unknown) as string]: `%${escape(value[`${orPrefix}${MATCHING_PATTERNS.EW}`])}`,
+            };
+          } else if (value[`${orPrefix}${MATCHING_PATTERNS.EQ}`]) {
+            operatorExpression = {
+              [Op.eq]: `${escape(value[`${orPrefix}${MATCHING_PATTERNS.EQ}`])}`,
+            };
+          } else if (value[`${orPrefix}${MATCHING_PATTERNS.NE}`]) {
+            operatorExpression = {
+              [Op.ne]: `${escape(value[`${orPrefix}${MATCHING_PATTERNS.NE}`])}`,
+            };
+          } else if (value[OPERATORS.OR]) {
+            operatorExpression = {
+              [(Op.like as unknown) as string]: `%${escape(value[OPERATORS.OR])}%`,
+            };
+          } 
+
+          return {
+            ...memo,
+            [Op.or]: [
+              ...(memo[Op.or] || []),
+              {
+                [property.name()]: operatorExpression,
+              },
+            ],
           };
         }
       } else {
