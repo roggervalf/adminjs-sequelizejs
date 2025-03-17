@@ -3,7 +3,7 @@ import { Op } from 'sequelize';
 
 export const uuidRegex = /^[0-9A-F]{8}-[0-9A-F]{4}-[5|4|3|2|1][0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i;
 
-const OPERATOR_SEPARATOR = '~'
+const OPERATOR_SEPARATOR = '~';
 
 const MATCHING_PATTERNS = {
   EQ: 'equals',
@@ -11,12 +11,12 @@ const MATCHING_PATTERNS = {
   CO: 'contains',
   EW: 'endsWith',
   SW: 'startsWith',
-}
+};
 
 const OPERATORS = {
   AND: 'and',
-  OR: 'or'
-}
+  OR: 'or',
+};
 
 export const convertFilter = (filter) => {
   if (!filter) {
@@ -85,7 +85,7 @@ export const convertFilter = (filter) => {
             operatorExpression = {
               [(Op.like as unknown) as string]: `%${escape(value[OPERATORS.OR])}%`,
             };
-          } 
+          }
 
           return {
             ...memo,
